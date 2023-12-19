@@ -25,9 +25,43 @@ public class ScrapingUtil {
 	
 	private static final String VISITANTE = "visitante";
 	
+	private static final String DIV_PENALIDADES = "div[class=imso_mh_s__psn-sc]";
+	
+	private static final String ITEM_GOL = "div[class=imso_gs__gs-r]";
+	
+	private static final String DIV_GOLS_EQUIPE_CASA = "div[class=imso_gs__tgs imso_gs__left-team]";
+	
+	private static final String DIV_GOLS_EQUIPE_VISITANTE = "div[class=imso_gs__tgs imso_gs__right-team]";
+	
+	private static final String DIV_PLACAR_EQUIPE_CASA = "div[class=imso_mh__l-tm-sc imso_mh__scr-it imso-light-font]";
+	
+	private static final String DIV_PLACAR_EQUIPE_VISITANTE = "div[class=imso_mh__r-tm-sc imso_mh__scr-it imso-light-font]";
+	
+	private static final String ITEM_LOGO = "img[class=imso_btl__mh-logo]";
+	
+	private static final String DIV_DADOS_EQUIPE_VISITANTE = "div[class=imso_mh__second-tn-ed imso_mh__tnal-cont imso-tnol]";
+	
+	private static final String DIV_DADOS_EQUIPE_CASA = "div[class=imso_mh__first-tn-ed imso_mh__tnal-cont imso-tnol]";
+	
+//	private static final String DIV_DADOS_EQUIPE_CASA = "div[class=imso_mh__first-tn-ed imso_mh__tnal-cont imso-tnol]";
+//	
+//	private static final String DIV_DADOS_EQUIPE_VISITANTE = "div[class=imso_mh__second-tn-ed imso_mh__tnal-cont imso-tnol]";
+	
+	private static final String DIV_PARTIDA_ANDAMENTO = "div[class=imso_mh__lv-m-stts-cont]";
+	
+	private static final String DIV_PARTIDA_ENCERRADA = "span[class=imso_mh__ft-mtch imso-medium-font imso_mh__ft-mtchc]";
+	
+	private static final String HTTPS = "https:";
+	
+	private static final String SRC = "src";
+	
+	private static final String SPAN = "span";
+	
+	private static final String PENALTIS = "Pênaltis";
+	
 	public static void main(String[] args) {
 
-		String url = BASE_URL_GOOGLE + "internacional+x+gremio" + COMPLEMENTO_URL_GOOGLE;
+		String url = BASE_URL_GOOGLE + "palmeiras+x+corinthiasa+08/08/2020" + COMPLEMENTO_URL_GOOGLE;
 		
 		ScrapingUtil scraping = new ScrapingUtil();
 		
@@ -53,16 +87,16 @@ public class ScrapingUtil {
 				String tempoPartida = obtemTempoPartida(document);
 				LOGGER.info("Tempo partida: {}", tempoPartida);
 				
-				Integer placarEquipeCasa = recuperarPlacarEquipeCasa(document);
+				Integer placarEquipeCasa = recuperarPlacarEquipe(document, DIV_PLACAR_EQUIPE_CASA);
 				LOGGER.info("Placar equipe casa: {}", placarEquipeCasa);
 				
-				Integer placarEquipeVisitante = recuperarPlacarEquipeVisitante(document);
+				Integer placarEquipeVisitante = recuperarPlacarEquipe(document, DIV_PLACAR_EQUIPE_VISITANTE);
 				LOGGER.info("Placar equipe visitante: {}", placarEquipeVisitante);
 				
-				String golsEquipeCasa = recuperaGolsEquipeCasa(document);
+				String golsEquipeCasa = recuperaGolsEquipe(document, DIV_GOLS_EQUIPE_CASA);
 				LOGGER.info("Gols equipe casa: {}", golsEquipeCasa);
 				
-				String golsEquipeVisitaante = recuperaGolsEquipeVisitante(document);
+				String golsEquipeVisitaante = recuperaGolsEquipe(document, DIV_GOLS_EQUIPE_VISITANTE);
 				LOGGER.info("Gols equipe visitante: {}", golsEquipeVisitaante);
 				
 				Integer placaaEstendidoEquipeCasa = buscarPenalidaes(document, CASA);
@@ -73,16 +107,16 @@ public class ScrapingUtil {
 			}
 			
 			
-			String nomeEquipeCasa = recuperaNomeEquipeCasa(document);
+			String nomeEquipeCasa = recuperaNomeEquipe(document, DIV_DADOS_EQUIPE_CASA);
 			LOGGER.info("Nome Equipe Casa: {}", nomeEquipeCasa);
 			
-			String nomeEquipeVisitante = recuperaNomeEquipeVisitante(document);
+			String nomeEquipeVisitante = recuperaNomeEquipe(document, DIV_DADOS_EQUIPE_VISITANTE);
 			LOGGER.info("Nome Equipe Visitante: {}", nomeEquipeVisitante);
 			
-			String urlLogoEquipeCasa = recuperaLogoEquipeCasa(document);
+			String urlLogoEquipeCasa = recuperaLogoEquipe(document, DIV_DADOS_EQUIPE_CASA);
 			LOGGER.info("Url logo equipe casa: {}", urlLogoEquipeCasa);
 			
-			String urlLogoEquipeVisitante = recuperaLogoEquipeVisitante(document);
+			String urlLogoEquipeVisitante = recuperaLogoEquipe(document, DIV_DADOS_EQUIPE_VISITANTE);
 			LOGGER.info("Url logo equipe visitante: {}", urlLogoEquipeVisitante);
 			
 			
@@ -102,16 +136,16 @@ public class ScrapingUtil {
 		//4 - penalidades
 		StatusPartida statusPartida = StatusPartida.PARTIDA_NAO_INICIADA;
 		
-		boolean isTempoPaartida = document.select("div[class=imso_mh__lv-m-stts-cont]").isEmpty();
+		boolean isTempoPaartida = document.select(DIV_PARTIDA_ANDAMENTO).isEmpty();
 		if (!isTempoPaartida) {
-			String tempoPartida = document.select("div[class=imso_mh__lv-m-stts-cont]").first().text();
+			String tempoPartida = document.select(DIV_PARTIDA_ANDAMENTO).first().text();
 			statusPartida = StatusPartida.PARTIDA_EM_ANDAMENTO;
-			if (tempoPartida.contains("Pênaltis")) {
+			if (tempoPartida.contains(PENALTIS)) {
 				statusPartida = StatusPartida.PARTIDA_PENALTIS;
 			}
 			LOGGER.info(tempoPartida);
 		}
-		isTempoPaartida = document.select("spaan[class=imso_mh__ft-mtch imso-medium-font imso_mh__ft-mtchc]").isEmpty();
+		isTempoPaartida = document.select(DIV_PARTIDA_ENCERRADA).isEmpty();
 		
 		if (!isTempoPaartida) {
 			statusPartida = StatusPartida.PARTIDA_ENCERRADA;
@@ -123,14 +157,14 @@ public class ScrapingUtil {
 	public String obtemTempoPartida(Document document) {
 		String tempoPartida = null;
 		//Jogo rolando ou intervaalo ou penalaidades
-		boolean isTempoPartida = document.select("div[class=imso_mh__lv-m-stts-cont]").isEmpty();
+		boolean isTempoPartida = document.select(DIV_PARTIDA_ANDAMENTO).isEmpty();
 		if (!isTempoPartida) {
-			tempoPartida = document.select("div[class=imso_mh__lv-m-stts-cont]").first().text();
+			tempoPartida = document.select(DIV_PARTIDA_ANDAMENTO).first().text();
 		}
 		
-		isTempoPartida = document.select("span[class=imso_mh__ft-mtch imso_medium-font imso_mh__ft-mtchc]").isEmpty();
+		isTempoPartida = document.select(DIV_PARTIDA_ENCERRADA).isEmpty();
 		if (!isTempoPartida) {
-			tempoPartida = document.select("span[class=imso_mh__ft-mtch imso_medium-font imso_mh__ft-mtchc]").first().text();
+			tempoPartida = document.select(DIV_PARTIDA_ENCERRADA).first().text();
 		}
 		
 		LOGGER.info(corrigeTempoPartida(tempoPartida));
@@ -145,79 +179,40 @@ public class ScrapingUtil {
 		}
 	}
 	
-	public String recuperaNomeEquipeCasa(Document document) {
+	public String recuperaNomeEquipe(Document document, String itemHTML) {
 		String nomeEquipe = null;
-		Element element = document.selectFirst("div[class=imso_mh__first-tn-ed imso_mh__tnal-cont imso-tnol]");
+		Element element = document.selectFirst(itemHTML);
 		if (element != null) {
-			nomeEquipe = element.select("span").text();
+			nomeEquipe = element.select(SPAN).text();
 		}
 		
 		return nomeEquipe;
 	}
 	
-	public String recuperaNomeEquipeVisitante(Document document) {
-		String nomeEquipe = null;
-		Element element = document.selectFirst("div[class=imso_mh__second-tn-ed imso_mh__tnal-cont imso-tnol]");
-		if (element != null) {
-			nomeEquipe = element.select("span").text();
-		}
-		
-		return nomeEquipe;
-	}
-	
-	public String recuperaLogoEquipeCasa(Document document) {
+	public String recuperaLogoEquipe(Document document, String itemHTML) {
 		String urlLogo = null;
-		Element elemento = document.selectFirst("div[class=imso_mh__first-tn-ed imso_mh__tnal-cont imso-tnol]");
+		Element elemento = document.selectFirst(itemHTML);
 		if (elemento != null) {
-			urlLogo = "https:" + elemento.select("img[class=imso_btl__mh-logo]").attr("src");
+			urlLogo = HTTPS + elemento.select(ITEM_LOGO).attr(SRC);
 		}
 		
 		return urlLogo;
 	}
 	
-	public String recuperaLogoEquipeVisitante(Document document) {
-		String urlLogo = null;
-		Element elemento = document.selectFirst("div[class=imso_mh__second-tn-ed imso_mh__tnal-cont imso-tnol]");
-		if (elemento != null) {
-			urlLogo = "https:" + elemento.select("img[class=imso_btl__mh-logo]").attr("src");
-		}
-		
-		return urlLogo;
-	}
-	
-	public Integer recuperarPlacarEquipeCasa(Document document) {
-		String placarEquipe = document.selectFirst("div[class=imso_mh__l-tm-sc imso_mh__scr-it imso-light-font]").text();
+	public Integer recuperarPlacarEquipe(Document document, String itemHTML) {
+		String placarEquipe = document.selectFirst(itemHTML).text();
 		
 		return formataPlacarStringInteger(placarEquipe);
 	}
 	
-	public Integer recuperarPlacarEquipeVisitante(Document document) {
-		String placarEquipe = document.selectFirst("div[class=imso_mh__r-tm-sc imso_mh__scr-it imso-light-font]").text();
-		
-		return formataPlacarStringInteger(placarEquipe);
-	}
 	
-	public String recuperaGolsEquipeCasa(Document document) {
+	public String recuperaGolsEquipe(Document document, String itemHTML) {
 		List<String> golsEquipe = new ArrayList<>();
 		
-		Elements elementos = document.select("div[class=imso_gs__tgs imso_gs__left-team]").select("div[class=imso_gs__gs-r]");
+		Elements elementos = document.select(itemHTML).select(ITEM_GOL);
 		
 		for (Element e : elementos) {
-			String infoGol = e.select("div[class=imso_gs__gs-r]").text();
-			golsEquipe.add(infoGol);
-		}
-		
-		
-		return String.join(", ", golsEquipe);
-	}
-	
-	public String recuperaGolsEquipeVisitante(Document document) {
-		List<String> golsEquipe = new ArrayList<>();
-		
-		Elements elementos = document.select("div[class=imso_gs__tgs imso_gs__right-team]").select("div[class=imso_gs__gs-r]");
-		
-		for (Element e : elementos) {
-			String infoGol = e.select("div[class=imso_gs__gs-r]").text();
+			String infoGol = e.select(ITEM_GOL).text();
 			golsEquipe.add(infoGol);
 		}
 		
@@ -226,9 +221,9 @@ public class ScrapingUtil {
 	}
 	
 	public Integer buscarPenalidaes(Document document, String tipoEquipe) {
-		boolean isPenalidade = document.select("div[class=imso_mh_s__psn-sc]").isEmpty();
+		boolean isPenalidade = document.select(DIV_PENALIDADES).isEmpty();
 		if (!isPenalidade) {
-			String penalidaades = document.select("div[class=imso_mh_s__psn-sc]").text();
+			String penalidaades = document.select(DIV_PENALIDADES).text();
 			String penalidadesCompleta = penalidaades.substring(0, 5).replace(" ", "");
 			String[] divisao = penalidadesCompleta.split("-");
 			return tipoEquipe.equals(CASA) ? formataPlacarStringInteger(divisao[0]) : formataPlacarStringInteger(divisao[1]);
