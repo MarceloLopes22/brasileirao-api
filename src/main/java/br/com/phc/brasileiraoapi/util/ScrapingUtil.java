@@ -1,10 +1,13 @@
 package br.com.phc.brasileiraoapi.util;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +20,10 @@ public class ScrapingUtil {
 	private static final String BASE_URL_GOOGLE = "https://www.google.com/search?q=";
 	
 	private static final String COMPLEMENTO_URL_GOOGLE = "&hl=pt-BR";
+	
+	private static final String CASA = "casa";
+	
+	private static final String VISITANTE = "visitante";
 	
 	public static void main(String[] args) {
 
@@ -40,11 +47,29 @@ public class ScrapingUtil {
 			LOGGER.info("Titulo da pagina: {}", title);
 			
 			StatusPartida statusPartida = obtemStatusPartida(document);
-			LOGGER.info("Status Partida: ", statusPartida);
+			LOGGER.info("Status Partida: {}", statusPartida);
 			
 			if (statusPartida != StatusPartida.PARTIDA_NAO_INICIADA) {
 				String tempoPartida = obtemTempoPartida(document);
-				LOGGER.info("Tempo partida: ", tempoPartida);
+				LOGGER.info("Tempo partida: {}", tempoPartida);
+				
+				Integer placarEquipeCasa = recuperarPlacarEquipeCasa(document);
+				LOGGER.info("Placar equipe casa: {}", placarEquipeCasa);
+				
+				Integer placarEquipeVisitante = recuperarPlacarEquipeVisitante(document);
+				LOGGER.info("Placar equipe visitante: {}", placarEquipeVisitante);
+				
+				String golsEquipeCasa = recuperaGolsEquipeCasa(document);
+				LOGGER.info("Gols equipe casa: {}", golsEquipeCasa);
+				
+				String golsEquipeVisitaante = recuperaGolsEquipeVisitante(document);
+				LOGGER.info("Gols equipe visitante: {}", golsEquipeVisitaante);
+				
+				Integer placaaEstendidoEquipeCasa = buscarPenalidaes(document, CASA);
+				LOGGER.info("placar estendido equipe casa: {}", placaaEstendidoEquipeCasa);
+				
+				Integer placaaEstendidoEquipeVisitante = buscarPenalidaes(document, VISITANTE);
+				LOGGER.info("placar estendido equipe visitante: {}", placaaEstendidoEquipeVisitante);
 			}
 			
 			
@@ -158,5 +183,67 @@ public class ScrapingUtil {
 		}
 		
 		return urlLogo;
+	}
+	
+	public Integer recuperarPlacarEquipeCasa(Document document) {
+		String placarEquipe = document.selectFirst("div[class=imso_mh__l-tm-sc imso_mh__scr-it imso-light-font]").text();
+		
+		return formataPlacarStringInteger(placarEquipe);
+	}
+	
+	public Integer recuperarPlacarEquipeVisitante(Document document) {
+		String placarEquipe = document.selectFirst("div[class=imso_mh__r-tm-sc imso_mh__scr-it imso-light-font]").text();
+		
+		return formataPlacarStringInteger(placarEquipe);
+	}
+	
+	public String recuperaGolsEquipeCasa(Document document) {
+		List<String> golsEquipe = new ArrayList<>();
+		
+		Elements elementos = document.select("div[class=imso_gs__tgs imso_gs__left-team]").select("div[class=imso_gs__gs-r]");
+		
+		for (Element e : elementos) {
+			String infoGol = e.select("div[class=imso_gs__gs-r]").text();
+			golsEquipe.add(infoGol);
+		}
+		
+		
+		return String.join(", ", golsEquipe);
+	}
+	
+	public String recuperaGolsEquipeVisitante(Document document) {
+		List<String> golsEquipe = new ArrayList<>();
+		
+		Elements elementos = document.select("div[class=imso_gs__tgs imso_gs__right-team]").select("div[class=imso_gs__gs-r]");
+		
+		for (Element e : elementos) {
+			String infoGol = e.select("div[class=imso_gs__gs-r]").text();
+			golsEquipe.add(infoGol);
+		}
+		
+		
+		return String.join(", ", golsEquipe);
+	}
+	
+	public Integer buscarPenalidaes(Document document, String tipoEquipe) {
+		boolean isPenalidade = document.select("div[class=imso_mh_s__psn-sc]").isEmpty();
+		if (!isPenalidade) {
+			String penalidaades = document.select("div[class=imso_mh_s__psn-sc]").text();
+			String penalidadesCompleta = penalidaades.substring(0, 5).replace(" ", "");
+			String[] divisao = penalidadesCompleta.split("-");
+			return tipoEquipe.equals(CASA) ? formataPlacarStringInteger(divisao[0]) : formataPlacarStringInteger(divisao[1]);
+		}
+		return null;
+	}
+	
+	public Integer formataPlacarStringInteger(String placar) {
+		Integer valor;
+		try {
+			valor = Integer.parseInt(placar);
+		} catch (Exception e) {
+			valor = 0;
+		}
+		
+		return valor;
 	}
 }
